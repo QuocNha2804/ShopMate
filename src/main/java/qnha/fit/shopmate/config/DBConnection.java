@@ -14,9 +14,12 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class DBConnection {
     private static HikariDataSource dataSource;
+    private static String lastInitError = null;
 
     private DBConnection() {
     }
@@ -26,22 +29,62 @@ public final class DBConnection {
             return;
         }
         try {
+            ensureDatabaseExists(AppConfig.getDbUrl(), AppConfig.getDbUsername(), AppConfig.getDbPassword());
+
             HikariConfig config = new HikariConfig();
             config.setJdbcUrl(AppConfig.getDbUrl());
             config.setUsername(AppConfig.getDbUsername());
             config.setPassword(AppConfig.getDbPassword());
             config.setDriverClassName(AppConfig.get("db.driver", "org.mariadb.jdbc.Driver"));
             config.setMaximumPoolSize(Integer.parseInt(AppConfig.get("db.pool.size", "10")));
-            config.setMinimumIdle(2);
-            config.setConnectionTimeout(10000);
+            config.setMinimumIdle(1);
+            config.setConnectionTimeout(4000);
+            config.setInitializationFailTimeout(2000);
             config.addDataSourceProperty("cachePrepStmts", "true");
             config.addDataSourceProperty("prepStmtCacheSize", "250");
             config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
 
             dataSource = new HikariDataSource(config);
+            lastInitError = null;
             AppLogger.info("Khởi tạo HikariCP Connection Pool thành công.");
         } catch (Exception e) {
-            AppLogger.error("Không thể khởi tạo HikariCP Pool, chuyển sang kết nối trực tiếp khi cần.", e);
+            lastInitError = e.getMessage();
+            AppLogger.error("Không thể khởi tạo HikariCP Pool: " + e.getMessage(), e);
+        }
+    }
+
+    public static void ensureDatabaseExists(String jdbcUrl, String username, String password) throws SQLException {
+        Pattern p = Pattern.compile("^(jdbc:mariadb://[^/]+)/([^?]+)(.*)$");
+        Matcher m = p.matcher(jdbcUrl);
+        if (m.find()) {
+            String serverUrl = m.group(1) + "/" + m.group(3);
+            String dbName = m.group(2);
+            try (Connection conn = DriverManager.getConnection(serverUrl, username, password);
+                 Statement stmt = conn.createStatement()) {
+                stmt.execute("CREATE DATABASE IF NOT EXISTS `" + dbName + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            }
+        }
+    }
+
+    public static synchronized void reinitializePool() {
+        closePool();
+        initPool();
+    }
+
+    public static String getLastInitError() {
+        return lastInitError;
+    }
+
+    public static void testConnection(String jdbcUrl, String username, String password) throws SQLException {
+        try {
+            Class.forName(AppConfig.get("db.driver", "org.mariadb.jdbc.Driver"));
+        } catch (ClassNotFoundException ignored) {
+        }
+        ensureDatabaseExists(jdbcUrl, username, password);
+        try (Connection conn = DriverManager.getConnection(jdbcUrl, username, password)) {
+            if (!conn.isValid(3)) {
+                throw new SQLException("Kết nối không hợp lệ hoặc quá thời gian chờ.");
+            }
         }
     }
 
@@ -62,7 +105,7 @@ public final class DBConnection {
     /**
      * Tự động kiểm tra và chạy schema.sql + data.sql nếu database mới tạo chưa có bảng users.
      */
-    public static void initializeDatabaseIfNeeded() {
+    public static boolean initializeDatabaseIfNeeded() {
         try (Connection conn = getConnection()) {
             boolean hasUsersTable = false;
             try (ResultSet rs = conn.getMetaData().getTables(conn.getCatalog(), null, "users", null)) {
@@ -76,8 +119,12 @@ public final class DBConnection {
                 executeResourceSql(conn, "data.sql");
                 AppLogger.info("Khởi tạo Database và dữ liệu mẫu thành công!");
             }
+            lastInitError = null;
+            return true;
         } catch (Exception e) {
+            lastInitError = e.getMessage();
             AppLogger.error("Lỗi khi kiểm tra/khởi tạo cơ sở dữ liệu: " + e.getMessage(), e);
+            return false;
         }
     }
 
@@ -121,6 +168,7 @@ public final class DBConnection {
     public static synchronized void closePool() {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
+            dataSource = null;
         }
     }
 }
