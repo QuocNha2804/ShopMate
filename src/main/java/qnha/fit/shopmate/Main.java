@@ -9,23 +9,26 @@ import qnha.fit.shopmate.ui.frame.LoginFrame;
 import qnha.fit.shopmate.util.AppLogger;
 
 import javax.swing.*;
+import java.awt.*;
 
 public class Main {
     public static void main(String[] args) {
-        // 1. Thiết lập giao diện FlatLaf theo cấu hình đã lưu
+        // 1. Thiết lập giao diện FlatLaf hiện đại
         setupLookAndFeel();
 
         // 2. Khởi tạo kết nối MariaDB & Tự động nạp schema.sql + data.sql nếu chạy lần đầu
+        boolean dbReady = false;
         try {
             DBConnection.initPool();
-            DBConnection.initializeDatabaseIfNeeded();
+            dbReady = DBConnection.initializeDatabaseIfNeeded();
         } catch (Exception e) {
             AppLogger.error("Cảnh báo khởi tạo DB khi mở ứng dụng: " + e.getMessage(), e);
         }
 
+        final boolean initialDbReady = dbReady;
         // 3. Khởi chạy màn hình Đăng nhập trên Event Dispatch Thread (EDT)
         SwingUtilities.invokeLater(() -> {
-            LoginFrame loginFrame = new LoginFrame();
+            LoginFrame loginFrame = new LoginFrame(initialDbReady);
             loginFrame.setVisible(true);
         });
     }
@@ -40,9 +43,17 @@ public class Main {
             } else {
                 FlatLightLaf.setup();
             }
+            UIManager.put("defaultFont", new Font("Segoe UI", Font.PLAIN, 13));
             UIManager.put("Button.arc", 10);
-            UIManager.put("Component.arc", 8);
-            UIManager.put("TextComponent.arc", 8);
+            UIManager.put("Component.arc", 10);
+            UIManager.put("TextComponent.arc", 10);
+            UIManager.put("CheckBox.arc", 6);
+            UIManager.put("ScrollBar.thumbArc", 999);
+            UIManager.put("ScrollBar.width", 10);
+            UIManager.put("Table.showHorizontalLines", true);
+            UIManager.put("Table.showVerticalLines", false);
+            UIManager.put("TabbedPane.showTabSeparators", true);
+            UIManager.put("TitlePane.unifiedBackground", true);
         } catch (Exception e) {
             AppLogger.error("Không thể khởi tạo giao diện FlatLaf", e);
         }
