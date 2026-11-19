@@ -8,6 +8,7 @@ import qnha.fit.shopmate.service.InvoiceService;
 import qnha.fit.shopmate.ui.dialog.InvoicePreviewDialog;
 import qnha.fit.shopmate.util.ExcelExporter;
 import qnha.fit.shopmate.util.FormatUtil;
+import qnha.fit.shopmate.util.UIUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -41,31 +42,33 @@ public class InvoiceHistoryPanel extends JPanel {
         txtFromDate.setText(LocalDate.now().minusDays(30).toString());
         txtToDate.setText(LocalDate.now().toString());
 
-        // Thanh lọc & công cụ
         JPanel topBar = new JPanel(new BorderLayout(8, 8));
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
         filterPanel.add(new JLabel("Mã HĐ / Khách:"));
+        UIUtil.styleSearchField(txtKeyword, "Mã HĐ, tên/SĐT khách...");
+        txtKeyword.setPreferredSize(new Dimension(170, 32));
         filterPanel.add(txtKeyword);
-        filterPanel.add(new JLabel("Từ ngày (yyyy-MM-dd):"));
+        filterPanel.add(new JLabel("Từ:"));
         filterPanel.add(txtFromDate);
-        filterPanel.add(new JLabel("Đến ngày:"));
+        filterPanel.add(new JLabel("Đến:"));
         filterPanel.add(txtToDate);
-        filterPanel.add(new JLabel("Nhân viên:"));
+        filterPanel.add(new JLabel("NV:"));
         filterPanel.add(cboEmployee);
         filterPanel.add(new JLabel("Trạng thái:"));
         filterPanel.add(cboStatus);
 
         JButton btnFilter = new JButton("Lọc hóa đơn");
-        btnFilter.setBackground(new Color(37, 99, 235));
-        btnFilter.setForeground(Color.WHITE);
+        UIUtil.stylePrimaryButton(btnFilter);
         filterPanel.add(btnFilter);
 
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
         JButton btnViewPrint = new JButton("Xem chi tiết & In lại");
+        UIUtil.styleSecondaryButton(btnViewPrint);
         JButton btnCancelInvoice = new JButton("Hủy hóa đơn & Hoàn tồn kho (ADMIN)");
-        btnCancelInvoice.setForeground(new Color(220, 38, 38));
+        UIUtil.styleDangerButton(btnCancelInvoice);
         btnCancelInvoice.setEnabled(SessionManager.isAdmin());
         JButton btnExportExcel = new JButton("Xuất Excel");
+        UIUtil.styleSuccessButton(btnExportExcel);
 
         actionPanel.add(btnViewPrint);
         actionPanel.add(btnCancelInvoice);
@@ -79,7 +82,9 @@ public class InvoiceHistoryPanel extends JPanel {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tblInvoices = new JTable(invoiceModel);
-        tblInvoices.setRowHeight(30);
+        UIUtil.styleTable(tblInvoices);
+        UIUtil.alignColumnCenter(tblInvoices, 0, 9, 10);
+        UIUtil.alignColumnRight(tblInvoices, 5, 6, 7, 8);
 
         tblInvoices.addMouseListener(new MouseAdapter() {
             @Override

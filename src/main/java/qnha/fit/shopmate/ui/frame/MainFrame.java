@@ -6,6 +6,7 @@ import qnha.fit.shopmate.model.User;
 import qnha.fit.shopmate.ui.component.SidebarButton;
 import qnha.fit.shopmate.ui.dialog.ChangePasswordDialog;
 import qnha.fit.shopmate.ui.panel.*;
+import qnha.fit.shopmate.util.UIUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -18,7 +19,7 @@ public class MainFrame extends JFrame {
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel contentPanel = new JPanel(cardLayout);
     private final List<SidebarButton> navButtons = new ArrayList<>();
-    private final JLabel lblPageTitle = new JLabel("Tổng quan (Dashboard)");
+    private final JLabel lblPageTitle = new JLabel("Tổng quan hoạt động kinh doanh");
 
     private DashboardPanel dashboardPanel;
     private POSPanel posPanel;
@@ -33,35 +34,56 @@ public class MainFrame extends JFrame {
 
     public MainFrame(User user) {
         this.currentUser = user;
-        setTitle(AppConfig.getStoreName() + " — Phần mềm Quản lý Bán hàng POS [" + user.getFullName() + " - " + user.getRole() + "]");
+        setTitle(AppConfig.getStoreName() + " — ShopMate POS [" + user.getFullName() + " - " + user.getRole() + "]");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1360, 820);
-        setMinimumSize(new Dimension(1150, 700));
+        setSize(1380, 840);
+        setMinimumSize(new Dimension(1180, 720));
         setLocationRelativeTo(null);
 
         initUI();
     }
 
     private void initUI() {
-        // 1. Sidebar trái (Dark Slate)
+        // 1. Sidebar trái (Dark Slate hiện đại)
         JPanel sidebar = new JPanel(new BorderLayout());
         sidebar.setBackground(new Color(15, 23, 42));
-        sidebar.setPreferredSize(new Dimension(235, 0));
+        sidebar.setPreferredSize(new Dimension(245, 0));
 
-        // Logo & Tên cửa hàng trên Sidebar
-        JPanel brandBox = new JPanel(new GridLayout(2, 1, 0, 2));
+        // Brand Header trên Sidebar
+        JPanel brandBox = new JPanel(new BorderLayout(10, 4));
         brandBox.setOpaque(false);
-        brandBox.setBorder(new EmptyBorder(18, 20, 16, 16));
+        brandBox.setBorder(new EmptyBorder(20, 18, 16, 16));
+
+        JLabel logoIcon = new JLabel("SM", SwingConstants.CENTER) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(UIUtil.PRIMARY);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        logoIcon.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        logoIcon.setForeground(Color.WHITE);
+        logoIcon.setPreferredSize(new Dimension(40, 40));
+
+        JPanel brandTexts = new JPanel(new GridLayout(2, 1, 0, 2));
+        brandTexts.setOpaque(false);
         JLabel lblBrand = new JLabel("SHOPMATE POS");
-        lblBrand.setFont(new Font("SansSerif", Font.BOLD, 20));
+        lblBrand.setFont(new Font("Segoe UI", Font.BOLD, 17));
         lblBrand.setForeground(Color.WHITE);
 
-        JLabel lblRoleBadge = new JLabel(currentUser.getFullName() + " (" + currentUser.getRole() + ")");
-        lblRoleBadge.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        JLabel lblRoleBadge = new JLabel(currentUser.getRole() + " • " + currentUser.getCode());
+        lblRoleBadge.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         lblRoleBadge.setForeground(new Color(148, 163, 184));
 
-        brandBox.add(lblBrand);
-        brandBox.add(lblRoleBadge);
+        brandTexts.add(lblBrand);
+        brandTexts.add(lblRoleBadge);
+
+        brandBox.add(logoIcon, BorderLayout.WEST);
+        brandBox.add(brandTexts, BorderLayout.CENTER);
 
         // Menu điều hướng
         JPanel menuBox = new JPanel();
@@ -69,7 +91,6 @@ public class MainFrame extends JFrame {
         menuBox.setLayout(new BoxLayout(menuBox, BoxLayout.Y_AXIS));
         menuBox.setBorder(new EmptyBorder(6, 0, 10, 0));
 
-        // Khởi tạo các Panel
         dashboardPanel = new DashboardPanel();
         posPanel = new POSPanel();
         productPanel = new ProductPanel();
@@ -110,13 +131,14 @@ public class MainFrame extends JFrame {
         addNavButton(menuBox, "⚙️  Cài đặt hệ thống", "SETTINGS", "Cài đặt Cửa hàng, Giao diện & Backup DB", () -> settingPanel.refreshData());
 
         // Khu vực Đổi mật khẩu & Đăng xuất dưới cùng Sidebar
-        JPanel bottomAccountBox = new JPanel(new GridLayout(2, 1, 6, 6));
+        JPanel bottomAccountBox = new JPanel(new GridLayout(2, 1, 6, 8));
         bottomAccountBox.setOpaque(false);
-        bottomAccountBox.setBorder(new EmptyBorder(12, 16, 16, 16));
+        bottomAccountBox.setBorder(new EmptyBorder(12, 16, 18, 16));
 
         JButton btnChangePass = new JButton("🔑 Đổi mật khẩu");
+        UIUtil.styleSecondaryButton(btnChangePass);
         JButton btnLogout = new JButton("🚪 Đăng xuất");
-        btnLogout.setForeground(new Color(220, 38, 38));
+        UIUtil.styleDangerButton(btnLogout);
 
         btnChangePass.addActionListener(e -> new ChangePasswordDialog(this).setVisible(true));
         btnLogout.addActionListener(e -> handleLogout());
@@ -124,8 +146,13 @@ public class MainFrame extends JFrame {
         bottomAccountBox.add(btnChangePass);
         bottomAccountBox.add(btnLogout);
 
+        JScrollPane menuScroll = new JScrollPane(menuBox);
+        menuScroll.setOpaque(false);
+        menuScroll.getViewport().setOpaque(false);
+        menuScroll.setBorder(null);
+
         sidebar.add(brandBox, BorderLayout.NORTH);
-        sidebar.add(menuBox, BorderLayout.CENTER);
+        sidebar.add(menuScroll, BorderLayout.CENTER);
         sidebar.add(bottomAccountBox, BorderLayout.SOUTH);
 
         // 2. Khu vực bên phải (Header + CardLayout Content)
@@ -133,30 +160,41 @@ public class MainFrame extends JFrame {
 
         JPanel topHeader = new JPanel(new BorderLayout());
         topHeader.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(226, 232, 240)),
-                new EmptyBorder(12, 20, 12, 20)
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(226, 232, 240, 140)),
+                new EmptyBorder(14, 22, 14, 22)
         ));
-        lblPageTitle.setFont(new Font("SansSerif", Font.BOLD, 18));
+        lblPageTitle.setFont(new Font("Segoe UI", Font.BOLD, 19));
 
-        JLabel lblStoreInfo = new JLabel(AppConfig.getStoreName() + "  |  Ca trực: " + currentUser.getFullName());
-        lblStoreInfo.setFont(new Font("SansSerif", Font.BOLD, 13));
-        lblStoreInfo.setForeground(new Color(71, 85, 105));
+        JPanel userBadgePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        userBadgePanel.setOpaque(false);
+
+        JLabel lblStoreInfo = new JLabel(AppConfig.getStoreName() + "  •  " + currentUser.getFullName());
+        lblStoreInfo.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblStoreInfo.setForeground(UIUtil.SLATE_500);
+
+        JLabel lblRolePill = new JLabel(" " + currentUser.getRole() + " ");
+        lblRolePill.setOpaque(true);
+        lblRolePill.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblRolePill.setForeground(Color.WHITE);
+        lblRolePill.setBackground(currentUser.isAdmin() ? UIUtil.PRIMARY : UIUtil.SUCCESS);
+        lblRolePill.setBorder(new EmptyBorder(3, 8, 3, 8));
+
+        userBadgePanel.add(lblStoreInfo);
+        userBadgePanel.add(lblRolePill);
 
         topHeader.add(lblPageTitle, BorderLayout.WEST);
-        topHeader.add(lblStoreInfo, BorderLayout.EAST);
+        topHeader.add(userBadgePanel, BorderLayout.EAST);
 
         rightContainer.add(topHeader, BorderLayout.NORTH);
         rightContainer.add(contentPanel, BorderLayout.CENTER);
 
-        // JSplitPane nối Sidebar trái và Content phải theo đúng thiết kế
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sidebar, rightContainer);
         mainSplit.setDividerSize(0);
-        mainSplit.setDividerLocation(235);
+        mainSplit.setDividerLocation(245);
         mainSplit.setEnabled(false);
 
         setContentPane(mainSplit);
 
-        // Mặc định chọn Dashboard
         if (!navButtons.isEmpty()) {
             navButtons.getFirst().setSelectedState(true);
         }
@@ -185,7 +223,7 @@ public class MainFrame extends JFrame {
                 "Xác nhận đăng xuất", JOptionPane.YES_NO_OPTION);
         if (cf == JOptionPane.YES_OPTION) {
             SessionManager.logout();
-            new LoginFrame().setVisible(true);
+            new LoginFrame(true).setVisible(true);
             dispose();
         }
     }

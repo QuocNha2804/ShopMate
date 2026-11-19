@@ -11,12 +11,17 @@ import qnha.fit.shopmate.ui.dialog.CheckoutDialog;
 import qnha.fit.shopmate.ui.dialog.CustomerDialog;
 import qnha.fit.shopmate.ui.dialog.InvoicePreviewDialog;
 import qnha.fit.shopmate.util.FormatUtil;
+import qnha.fit.shopmate.util.UIUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
@@ -29,12 +34,10 @@ public class POSPanel extends JPanel {
     private final CustomerService customerService = new CustomerService();
     private final InvoiceService invoiceService = new InvoiceService();
 
-    // Cột trái: Grid sản phẩm
-    private final JTextField txtSearchProduct = new JTextField(16);
+    private final JTextField txtSearchProduct = new JTextField(18);
     private final JComboBox<Category> cboCategory = new JComboBox<>();
-    private final JPanel productGridPanel = new JPanel(new GridLayout(0, 3, 10, 10));
+    private final JPanel productGridPanel = new JPanel(new GridLayout(0, 3, 12, 12));
 
-    // Cột phải: Giỏ hàng & Thanh toán
     private final List<CartItem> cartItems = new ArrayList<>();
     private final DefaultTableModel cartTableModel;
     private final JTable tblCart;
@@ -54,17 +57,20 @@ public class POSPanel extends JPanel {
     private final JLabel lblTotalAmount = new JLabel("0 ₫");
 
     public POSPanel() {
-        setLayout(new BorderLayout(10, 10));
+        setLayout(new BorderLayout(12, 12));
         setBorder(new EmptyBorder(12, 14, 12, 14));
 
         // ================= CỘT TRÁI: DANH SÁCH SẢN PHẨM =================
         JPanel leftPanel = new JPanel(new BorderLayout(8, 8));
-        leftPanel.setBorder(BorderFactory.createTitledBorder("Danh mục Mặt hàng (Click vào sản phẩm để thêm vào giỏ)"));
+        leftPanel.setBorder(BorderFactory.createTitledBorder("Danh mục Mặt hàng (F2: Tìm / Quét mã SKU)"));
 
         JPanel searchBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        UIUtil.styleSearchField(txtSearchProduct, "Tìm tên hoặc quét mã SKU + Enter...");
+        txtSearchProduct.setPreferredSize(new Dimension(230, 34));
         searchBar.add(new JLabel("Tìm SP:"));
         searchBar.add(txtSearchProduct);
         JButton btnSearch = new JButton("Tìm");
+        UIUtil.stylePrimaryButton(btnSearch);
         searchBar.add(btnSearch);
         searchBar.add(new JLabel("Danh mục:"));
         searchBar.add(cboCategory);
@@ -74,28 +80,29 @@ public class POSPanel extends JPanel {
         gridWrapper.add(productGridPanel, BorderLayout.NORTH);
 
         JScrollPane productScroll = new JScrollPane(gridWrapper);
-        productScroll.getVerticalScrollBar().setUnitIncrement(16);
+        productScroll.getVerticalScrollBar().setUnitIncrement(18);
+        productScroll.setBorder(null);
 
         leftPanel.add(searchBar, BorderLayout.NORTH);
         leftPanel.add(productScroll, BorderLayout.CENTER);
 
         // ================= CỘT PHẢI: GIỎ HÀNG & THANH TOÁN =================
         JPanel rightPanel = new JPanel(new BorderLayout(8, 8));
-        rightPanel.setPreferredSize(new Dimension(490, 0));
-        rightPanel.setBorder(BorderFactory.createTitledBorder("Giỏ hàng & Thanh toán (Double-click dòng để nhập số lượng)"));
+        rightPanel.setPreferredSize(new Dimension(500, 0));
+        rightPanel.setBorder(BorderFactory.createTitledBorder("Giỏ hàng & Thanh toán (Double-click dòng để nhập SL)"));
 
-        // Bảng giỏ hàng
         String[] cartCols = {"Mã SP", "Tên mặt hàng", "SL", "Đơn giá", "Thành tiền"};
         cartTableModel = new DefaultTableModel(cartCols, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         tblCart = new JTable(cartTableModel);
-        tblCart.setRowHeight(30);
-        tblCart.getColumnModel().getColumn(0).setPreferredWidth(60);
+        UIUtil.styleTable(tblCart);
+        UIUtil.alignColumnCenter(tblCart, 0, 2);
+        UIUtil.alignColumnRight(tblCart, 3, 4);
+        tblCart.getColumnModel().getColumn(0).setPreferredWidth(62);
         tblCart.getColumnModel().getColumn(1).setPreferredWidth(165);
         tblCart.getColumnModel().getColumn(2).setPreferredWidth(45);
 
-        // Double-click để nhập số lượng
         tblCart.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -105,13 +112,15 @@ public class POSPanel extends JPanel {
             }
         });
 
-        // Thanh điều chỉnh số lượng giỏ hàng (+ / - / Xóa dòng)
-        JPanel cartActionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
+        JPanel cartActionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
         JButton btnPlus = new JButton("+ Tăng SL");
         JButton btnMinus = new JButton("- Giảm SL");
         JButton btnSetQty = new JButton("Nhập SL...");
         JButton btnRemoveRow = new JButton("Xóa món");
-        btnRemoveRow.setForeground(new Color(220, 38, 38));
+        UIUtil.styleSecondaryButton(btnPlus);
+        UIUtil.styleSecondaryButton(btnMinus);
+        UIUtil.styleSecondaryButton(btnSetQty);
+        UIUtil.styleDangerButton(btnRemoveRow);
 
         cartActionPanel.add(btnPlus);
         cartActionPanel.add(btnMinus);
@@ -122,10 +131,8 @@ public class POSPanel extends JPanel {
         cartCenterBox.add(new JScrollPane(tblCart), BorderLayout.CENTER);
         cartCenterBox.add(cartActionPanel, BorderLayout.SOUTH);
 
-        // Khung Khách hàng + Giảm giá + Tổng tiền + Nút Thanh toán
         JPanel checkoutBox = new JPanel(new BorderLayout(6, 6));
 
-        // 1. Chọn khách hàng theo SĐT
         JPanel customerPanel = new JPanel(new GridBagLayout());
         customerPanel.setBorder(BorderFactory.createTitledBorder("Khách hàng"));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -133,13 +140,18 @@ public class POSPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         gbc.gridx = 0; gbc.gridy = 0;
-        customerPanel.add(new JLabel("SĐT Khách:"), gbc);
+        customerPanel.add(new JLabel("SĐT:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
+        UIUtil.styleSearchField(txtCustomerPhone, "Nhập SĐT khách...");
         customerPanel.add(txtCustomerPhone, gbc);
 
         JButton btnFindCust = new JButton("Tìm KH");
-        JButton btnNewCust = new JButton("+ KH mới");
+        JButton btnNewCust = new JButton("+ Mới");
         JButton btnRetailCust = new JButton("Khách lẻ");
+        UIUtil.styleSecondaryButton(btnFindCust);
+        UIUtil.styleSecondaryButton(btnNewCust);
+        UIUtil.styleSecondaryButton(btnRetailCust);
+
         gbc.gridx = 2; gbc.weightx = 0;
         customerPanel.add(btnFindCust, gbc);
         gbc.gridx = 3;
@@ -147,12 +159,11 @@ public class POSPanel extends JPanel {
         gbc.gridx = 4;
         customerPanel.add(btnRetailCust, gbc);
 
-        lblCustomerInfo.setFont(new Font("SansSerif", Font.BOLD, 12));
-        lblCustomerInfo.setForeground(new Color(30, 64, 175));
+        lblCustomerInfo.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblCustomerInfo.setForeground(UIUtil.PRIMARY);
         gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 5;
         customerPanel.add(lblCustomerInfo, gbc);
 
-        // 2. Giảm giá / Voucher & Tính tổng
         JPanel summaryPanel = new JPanel(new GridBagLayout());
         summaryPanel.setBorder(BorderFactory.createTitledBorder("Khuyến mãi & Tổng thanh toán"));
         GridBagConstraints sgbc = new GridBagConstraints();
@@ -162,9 +173,12 @@ public class POSPanel extends JPanel {
         sgbc.gridx = 0; sgbc.gridy = 0;
         summaryPanel.add(cboManualDiscountType, sgbc);
         sgbc.gridx = 1; sgbc.weightx = 1.0;
+        UIUtil.styleSearchField(txtVoucherCode, "Mã / Giá trị...");
         summaryPanel.add(txtVoucherCode, sgbc);
         JButton btnApplyDiscount = new JButton("Áp dụng");
-        JButton btnClearDiscount = new JButton("Bỏ giảm");
+        JButton btnClearDiscount = new JButton("Bỏ");
+        UIUtil.styleSecondaryButton(btnApplyDiscount);
+        UIUtil.styleSecondaryButton(btnClearDiscount);
         sgbc.gridx = 2; sgbc.weightx = 0;
         summaryPanel.add(btnApplyDiscount, sgbc);
         sgbc.gridx = 3;
@@ -178,15 +192,15 @@ public class POSPanel extends JPanel {
         sgbc.gridx = 0; sgbc.gridy = 2;
         summaryPanel.add(new JLabel("Tạm tính:"), sgbc);
         lblSubtotal.setHorizontalAlignment(SwingConstants.RIGHT);
-        lblSubtotal.setFont(new Font("SansSerif", Font.BOLD, 13));
+        lblSubtotal.setFont(new Font("Segoe UI", Font.BOLD, 13));
         sgbc.gridx = 2;
         summaryPanel.add(lblSubtotal, sgbc);
 
         sgbc.gridx = 0; sgbc.gridy = 3;
         summaryPanel.add(new JLabel("Giảm giá:"), sgbc);
         lblDiscount.setHorizontalAlignment(SwingConstants.RIGHT);
-        lblDiscount.setForeground(new Color(22, 163, 74));
-        lblDiscount.setFont(new Font("SansSerif", Font.BOLD, 13));
+        lblDiscount.setForeground(UIUtil.SUCCESS);
+        lblDiscount.setFont(new Font("Segoe UI", Font.BOLD, 13));
         sgbc.gridx = 2;
         summaryPanel.add(lblDiscount, sgbc);
 
@@ -197,29 +211,27 @@ public class POSPanel extends JPanel {
         summaryPanel.add(lblVat, sgbc);
 
         JLabel lblTotalTitle = new JLabel("THÀNH TIỀN:");
-        lblTotalTitle.setFont(new Font("SansSerif", Font.BOLD, 16));
+        lblTotalTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
         sgbc.gridx = 0; sgbc.gridy = 5;
         summaryPanel.add(lblTotalTitle, sgbc);
 
         lblTotalAmount.setHorizontalAlignment(SwingConstants.RIGHT);
-        lblTotalAmount.setFont(new Font("SansSerif", Font.BOLD, 20));
-        lblTotalAmount.setForeground(new Color(220, 38, 38));
+        lblTotalAmount.setFont(new Font("Segoe UI", Font.BOLD, 21));
+        lblTotalAmount.setForeground(UIUtil.DANGER);
         sgbc.gridx = 2;
         summaryPanel.add(lblTotalAmount, sgbc);
 
-        // 3. Nút Hủy đơn & Thanh toán
         JPanel bottomButtons = new JPanel(new GridLayout(1, 2, 10, 0));
         bottomButtons.setBorder(new EmptyBorder(6, 0, 0, 0));
         JButton btnCancelOrder = new JButton("HỦY ĐƠN HÀNG");
-        btnCancelOrder.setFont(new Font("SansSerif", Font.BOLD, 14));
-        btnCancelOrder.setForeground(new Color(220, 38, 38));
-        btnCancelOrder.setPreferredSize(new Dimension(0, 44));
+        UIUtil.styleDangerButton(btnCancelOrder);
+        btnCancelOrder.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnCancelOrder.setPreferredSize(new Dimension(0, 46));
 
         JButton btnCheckout = new JButton("THANH TOÁN (F9)");
-        btnCheckout.setFont(new Font("SansSerif", Font.BOLD, 15));
-        btnCheckout.setBackground(new Color(22, 163, 74));
-        btnCheckout.setForeground(Color.WHITE);
-        btnCheckout.setPreferredSize(new Dimension(0, 44));
+        UIUtil.styleSuccessButton(btnCheckout);
+        btnCheckout.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        btnCheckout.setPreferredSize(new Dimension(0, 46));
 
         bottomButtons.add(btnCancelOrder);
         bottomButtons.add(btnCheckout);
@@ -235,9 +247,14 @@ public class POSPanel extends JPanel {
         splitPane.setResizeWeight(0.60);
         add(splitPane, BorderLayout.CENTER);
 
-        // ================= SỰ KIỆN =================
+        // ================= SỰ KIỆN & PHÍM TẮT =================
         btnSearch.addActionListener(e -> loadProductGrid());
-        txtSearchProduct.addActionListener(e -> loadProductGrid());
+        txtSearchProduct.addActionListener(e -> handleBarcodeOrEnterSearch());
+        txtSearchProduct.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { loadProductGrid(); }
+            @Override public void removeUpdate(DocumentEvent e) { loadProductGrid(); }
+            @Override public void changedUpdate(DocumentEvent e) { loadProductGrid(); }
+        });
         cboCategory.addActionListener(e -> loadProductGrid());
 
         btnPlus.addActionListener(e -> adjustSelectedQuantity(1));
@@ -265,7 +282,43 @@ public class POSPanel extends JPanel {
         btnCancelOrder.addActionListener(e -> handleCancelOrder());
         btnCheckout.addActionListener(e -> handleCheckout());
 
+        registerKeyboardShortcuts();
         refreshData();
+    }
+
+    private void registerKeyboardShortcuts() {
+        InputMap im = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap am = getActionMap();
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), "focusSearch");
+        am.put("focusSearch", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) {
+                txtSearchProduct.requestFocusInWindow();
+                txtSearchProduct.selectAll();
+            }
+        });
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_F9, 0), "checkout");
+        am.put("checkout", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) {
+                handleCheckout();
+            }
+        });
+    }
+
+    private void handleBarcodeOrEnterSearch() {
+        String kw = txtSearchProduct.getText().trim();
+        if (!kw.isEmpty()) {
+            List<Product> matches = productService.searchProducts(kw, null, "DEFAULT", true);
+            for (Product p : matches) {
+                if (p.getCode().equalsIgnoreCase(kw)) {
+                    addProductToCart(p);
+                    txtSearchProduct.setText("");
+                    return;
+                }
+            }
+        }
+        loadProductGrid();
     }
 
     public void refreshData() {
@@ -435,7 +488,6 @@ public class POSPanel extends JPanel {
         }
         int mode = cboManualDiscountType.getSelectedIndex();
         if (mode == 0) {
-            // Mã Voucher từ DB
             try {
                 appliedVoucher = customerService.validateAndGetVoucher(txtVoucherCode.getText().trim(), subtotal);
                 updateCartTotals();
@@ -446,7 +498,6 @@ public class POSPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Không thể áp dụng mã", JOptionPane.WARNING_MESSAGE);
             }
         } else {
-            // Giảm trực tiếp % hoặc Số tiền
             appliedVoucher = null;
             updateCartTotals();
         }
@@ -470,13 +521,11 @@ public class POSPanel extends JPanel {
             }
             return BigDecimal.ZERO;
         } else if (mode == 1) {
-            // Giảm %
             BigDecimal pct = FormatUtil.parseMoney(txtVoucherCode.getText());
             if (pct.compareTo(BigDecimal.valueOf(100)) > 0) pct = BigDecimal.valueOf(100);
             if (pct.compareTo(BigDecimal.ZERO) < 0) pct = BigDecimal.ZERO;
             return subtotal.multiply(pct).divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
         } else {
-            // Giảm tiền mặt trực tiếp
             BigDecimal amt = FormatUtil.parseMoney(txtVoucherCode.getText());
             if (amt.compareTo(subtotal) > 0) amt = subtotal;
             if (amt.compareTo(BigDecimal.ZERO) < 0) amt = BigDecimal.ZERO;
