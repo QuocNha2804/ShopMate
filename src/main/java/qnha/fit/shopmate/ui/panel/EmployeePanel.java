@@ -6,6 +6,7 @@ import qnha.fit.shopmate.service.AuthService;
 import qnha.fit.shopmate.service.ReportService;
 import qnha.fit.shopmate.ui.dialog.EmployeeDialog;
 import qnha.fit.shopmate.util.FormatUtil;
+import qnha.fit.shopmate.util.UIUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -27,23 +28,26 @@ public class EmployeePanel extends JPanel {
         setLayout(new BorderLayout(12, 12));
         setBorder(new EmptyBorder(16, 18, 16, 18));
 
-        // Toolbar
         JPanel toolbar = new JPanel(new BorderLayout(10, 6));
         JPanel searchBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         searchBox.add(new JLabel("Tìm nhân viên:"));
+        UIUtil.styleSearchField(txtSearch, "Mã NV, tên, username, SĐT...");
+        txtSearch.setPreferredSize(new Dimension(220, 32));
         searchBox.add(txtSearch);
         JButton btnSearch = new JButton("Tìm kiếm");
+        UIUtil.styleSecondaryButton(btnSearch);
         searchBox.add(btnSearch);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         JButton btnAdd = new JButton("+ Thêm Nhân viên");
-        btnAdd.setBackground(new Color(37, 99, 235));
-        btnAdd.setForeground(Color.WHITE);
+        UIUtil.stylePrimaryButton(btnAdd);
         JButton btnEdit = new JButton("Sửa / Phân quyền");
+        UIUtil.styleSecondaryButton(btnEdit);
         JButton btnResetPass = new JButton("Reset Mật khẩu (123456)");
-        btnResetPass.setForeground(new Color(217, 119, 6));
+        UIUtil.styleSecondaryButton(btnResetPass);
+        btnResetPass.setForeground(UIUtil.WARNING);
         JButton btnDeleteOrLock = new JButton("Xóa / Khóa TK");
-        btnDeleteOrLock.setForeground(new Color(220, 38, 38));
+        UIUtil.styleDangerButton(btnDeleteOrLock);
 
         actions.add(btnAdd);
         actions.add(btnEdit);
@@ -53,23 +57,24 @@ public class EmployeePanel extends JPanel {
         toolbar.add(searchBox, BorderLayout.WEST);
         toolbar.add(actions, BorderLayout.EAST);
 
-        // Bảng danh sách nhân viên
         String[] empCols = {"ID", "Mã NV", "Username", "Họ và tên", "Số điện thoại", "Email", "Vai trò (Role)", "Trạng thái", "Ngày tạo"};
         empTableModel = new DefaultTableModel(empCols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tblEmployees = new JTable(empTableModel);
-        tblEmployees.setRowHeight(28);
+        UIUtil.styleTable(tblEmployees);
+        UIUtil.alignColumnCenter(tblEmployees, 0, 1, 6, 7);
         JScrollPane empScroll = new JScrollPane(tblEmployees);
         empScroll.setBorder(BorderFactory.createTitledBorder("Danh sách Nhân viên hệ thống"));
 
-        // Bảng doanh thu theo nhân viên
         String[] revCols = {"Mã NV", "Họ và tên nhân viên", "Vai trò", "Tổng số hóa đơn đã lập", "Tổng doanh thu mang về"};
         revTableModel = new DefaultTableModel(revCols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         JTable tblRev = new JTable(revTableModel);
-        tblRev.setRowHeight(28);
+        UIUtil.styleTable(tblRev);
+        UIUtil.alignColumnCenter(tblRev, 0, 2);
+        UIUtil.alignColumnRight(tblRev, 3, 4);
         JScrollPane revScroll = new JScrollPane(tblRev);
         revScroll.setBorder(BorderFactory.createTitledBorder("Thống kê Doanh thu theo Nhân viên"));
 

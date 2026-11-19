@@ -4,6 +4,7 @@ import qnha.fit.shopmate.config.SessionManager;
 import qnha.fit.shopmate.model.Category;
 import qnha.fit.shopmate.service.ProductService;
 import qnha.fit.shopmate.util.FormatUtil;
+import qnha.fit.shopmate.util.UIUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -26,7 +27,6 @@ public class CategoryPanel extends JPanel {
         setLayout(new BorderLayout(12, 12));
         setBorder(new EmptyBorder(16, 18, 16, 18));
 
-        // Form nhập nhanh bên trên
         JPanel formCard = new JPanel(new GridBagLayout());
         formCard.setBorder(BorderFactory.createTitledBorder("Thông tin Danh mục sản phẩm"));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -36,11 +36,13 @@ public class CategoryPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 0;
         formCard.add(new JLabel("Tên danh mục (*):"), gbc);
         gbc.gridx = 1; gbc.weightx = 0.35;
+        UIUtil.styleSearchField(txtName, "Nhập tên danh mục...");
         formCard.add(txtName, gbc);
 
         gbc.gridx = 2; gbc.weightx = 0;
         formCard.add(new JLabel("Mô tả:"), gbc);
         gbc.gridx = 3; gbc.weightx = 0.45;
+        UIUtil.styleSearchField(txtDescription, "Mô tả ngắn...");
         formCard.add(txtDescription, gbc);
 
         gbc.gridx = 4; gbc.weightx = 0.2;
@@ -48,12 +50,13 @@ public class CategoryPanel extends JPanel {
 
         JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
         JButton btnAdd = new JButton("+ Thêm mới");
-        btnAdd.setBackground(new Color(37, 99, 235));
-        btnAdd.setForeground(Color.WHITE);
+        UIUtil.stylePrimaryButton(btnAdd);
         JButton btnUpdate = new JButton("Cập nhật");
+        UIUtil.styleSecondaryButton(btnUpdate);
         JButton btnDelete = new JButton("Xóa danh mục");
-        btnDelete.setForeground(new Color(220, 38, 38));
+        UIUtil.styleDangerButton(btnDelete);
         JButton btnClear = new JButton("Làm mới form");
+        UIUtil.styleSecondaryButton(btnClear);
 
         boolean isAdmin = SessionManager.isAdmin();
         btnAdd.setEnabled(isAdmin);
@@ -68,13 +71,14 @@ public class CategoryPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 5;
         formCard.add(btnBar, gbc);
 
-        // Bảng danh sách
         String[] cols = {"ID", "Tên danh mục", "Mô tả", "Số lượng SP", "Trạng thái", "Ngày tạo"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         table = new JTable(tableModel);
-        table.setRowHeight(30);
+        UIUtil.styleTable(table);
+        UIUtil.alignColumnCenter(table, 0, 3, 4);
+
         table.getSelectionModel().addListSelectionListener(e -> {
             int row = table.getSelectedRow();
             if (!e.getValueIsAdjusting() && row >= 0 && categories != null && row < categories.size()) {

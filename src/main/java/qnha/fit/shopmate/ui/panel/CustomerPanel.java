@@ -7,9 +7,12 @@ import qnha.fit.shopmate.service.InvoiceService;
 import qnha.fit.shopmate.ui.dialog.CustomerDialog;
 import qnha.fit.shopmate.ui.dialog.InvoicePreviewDialog;
 import qnha.fit.shopmate.util.FormatUtil;
+import qnha.fit.shopmate.util.UIUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -33,21 +36,23 @@ public class CustomerPanel extends JPanel {
         setLayout(new BorderLayout(12, 12));
         setBorder(new EmptyBorder(16, 18, 16, 18));
 
-        // Toolbar
         JPanel toolbar = new JPanel(new BorderLayout(10, 6));
         JPanel searchBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         searchBox.add(new JLabel("Tìm theo SĐT / Tên KH:"));
+        UIUtil.styleSearchField(txtSearch, "Nhập SĐT, tên hoặc email...");
+        txtSearch.setPreferredSize(new Dimension(230, 32));
         searchBox.add(txtSearch);
         JButton btnSearch = new JButton("Tìm kiếm");
+        UIUtil.styleSecondaryButton(btnSearch);
         searchBox.add(btnSearch);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         JButton btnAdd = new JButton("+ Thêm Khách hàng");
-        btnAdd.setBackground(new Color(37, 99, 235));
-        btnAdd.setForeground(Color.WHITE);
+        UIUtil.stylePrimaryButton(btnAdd);
         JButton btnEdit = new JButton("Sửa TT Khách");
+        UIUtil.styleSecondaryButton(btnEdit);
         JButton btnDelete = new JButton("Xóa");
-        btnDelete.setForeground(new Color(220, 38, 38));
+        UIUtil.styleDangerButton(btnDelete);
 
         actions.add(btnAdd);
         actions.add(btnEdit);
@@ -56,21 +61,22 @@ public class CustomerPanel extends JPanel {
         toolbar.add(searchBox, BorderLayout.WEST);
         toolbar.add(actions, BorderLayout.EAST);
 
-        // Bảng danh sách khách hàng (Trên)
         String[] custCols = {"ID", "Họ và tên", "Số điện thoại", "Email", "Địa chỉ", "Điểm tích lũy", "Ngày đăng ký"};
         customerModel = new DefaultTableModel(custCols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tblCustomers = new JTable(customerModel);
-        tblCustomers.setRowHeight(28);
+        UIUtil.styleTable(tblCustomers);
+        UIUtil.alignColumnCenter(tblCustomers, 0, 2, 5);
 
-        // Bảng lịch sử mua hàng của khách (Dưới)
         String[] histCols = {"Mã HĐ", "Ngày mua", "Thu ngân", "Tạm tính", "Giảm giá", "Tổng thanh toán", "Phương thức", "Trạng thái"};
         historyModel = new DefaultTableModel(histCols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tblHistory = new JTable(historyModel);
-        tblHistory.setRowHeight(28);
+        UIUtil.styleTable(tblHistory);
+        UIUtil.alignColumnRight(tblHistory, 3, 4, 5);
+        UIUtil.alignColumnCenter(tblHistory, 0, 6, 7);
 
         tblCustomers.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -109,6 +115,11 @@ public class CustomerPanel extends JPanel {
 
         btnSearch.addActionListener(e -> refreshData());
         txtSearch.addActionListener(e -> refreshData());
+        txtSearch.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { refreshData(); }
+            @Override public void removeUpdate(DocumentEvent e) { refreshData(); }
+            @Override public void changedUpdate(DocumentEvent e) { refreshData(); }
+        });
         btnAdd.addActionListener(e -> openCustomerDialog(null));
         btnEdit.addActionListener(e -> {
             Customer sel = getSelectedCustomer();

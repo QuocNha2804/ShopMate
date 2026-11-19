@@ -6,6 +6,7 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.renderer.category.BarRenderer;
+import org.jfree.chart.renderer.category.StandardBarPainter;
 import org.jfree.data.category.DefaultCategoryDataset;
 import qnha.fit.shopmate.dto.DashboardStatsDTO;
 import qnha.fit.shopmate.dto.TopProductDTO;
@@ -15,6 +16,7 @@ import qnha.fit.shopmate.service.ReportService;
 import qnha.fit.shopmate.ui.component.StatCard;
 import qnha.fit.shopmate.ui.dialog.InvoicePreviewDialog;
 import qnha.fit.shopmate.util.FormatUtil;
+import qnha.fit.shopmate.util.UIUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -30,10 +32,10 @@ public class DashboardPanel extends JPanel {
     private final ReportService reportService = new ReportService();
     private final InvoiceService invoiceService = new InvoiceService();
 
-    private final StatCard cardRevenue = new StatCard("DOANH THU HÔM NAY", "0 ₫", "Lợi nhuận: 0 ₫", new Color(37, 99, 235));
-    private final StatCard cardOrders = new StatCard("SỐ ĐƠN HÔM NAY", "0", "Đơn đã thanh toán", new Color(16, 185, 129));
-    private final StatCard cardLowStock = new StatCard("SP SẮP HẾT HÀNG", "0", "Tồn kho < 10 cần nhập", new Color(239, 68, 68));
-    private final StatCard cardNewCustomers = new StatCard("KHÁCH HÀNG MỚI", "0", "Trong 30 ngày qua", new Color(245, 158, 11));
+    private final StatCard cardRevenue = new StatCard("DOANH THU HÔM NAY", "0 ₫", "Lợi nhuận: 0 ₫", UIUtil.PRIMARY, "₫");
+    private final StatCard cardOrders = new StatCard("SỐ ĐƠN HÔM NAY", "0", "Đơn đã thanh toán", UIUtil.SUCCESS, "✓");
+    private final StatCard cardLowStock = new StatCard("SP SẮP HẾT HÀNG", "0", "Tồn kho < 10 cần nhập", UIUtil.DANGER, "!");
+    private final StatCard cardNewCustomers = new StatCard("KHÁCH HÀNG MỚI", "0", "Trong 30 ngày qua", UIUtil.WARNING, "★");
 
     private final DefaultCategoryDataset chartDataset = new DefaultCategoryDataset();
     private final DefaultTableModel topProductModel;
@@ -47,7 +49,7 @@ public class DashboardPanel extends JPanel {
         // 1. Hàng trên: 4 thẻ thống kê
         JPanel cardsPanel = new JPanel(new GridLayout(1, 4, 14, 0));
         cardsPanel.setOpaque(false);
-        cardsPanel.setPreferredSize(new Dimension(0, 112));
+        cardsPanel.setPreferredSize(new Dimension(0, 118));
         cardsPanel.add(cardRevenue);
         cardsPanel.add(cardOrders);
         cardsPanel.add(cardLowStock);
@@ -58,7 +60,7 @@ public class DashboardPanel extends JPanel {
         middlePanel.setOpaque(false);
 
         JFreeChart barChart = ChartFactory.createBarChart(
-                "Doanh thu 7 ngày gần nhất (VNĐ)",
+                "Doanh thu 7 ngày gần nhất",
                 "Ngày",
                 "Doanh thu (VNĐ)",
                 chartDataset,
@@ -74,7 +76,10 @@ public class DashboardPanel extends JPanel {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         JTable tblTopProducts = new JTable(topProductModel);
-        tblTopProducts.setRowHeight(28);
+        UIUtil.styleTable(tblTopProducts);
+        UIUtil.alignColumnCenter(tblTopProducts, 0, 1);
+        UIUtil.alignColumnRight(tblTopProducts, 3, 4);
+
         JScrollPane topScroll = new JScrollPane(tblTopProducts);
         topScroll.setBorder(BorderFactory.createTitledBorder("Top 5 Sản phẩm bán chạy nhất"));
 
@@ -87,7 +92,10 @@ public class DashboardPanel extends JPanel {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         JTable tblRecentOrders = new JTable(recentOrdersModel);
-        tblRecentOrders.setRowHeight(28);
+        UIUtil.styleTable(tblRecentOrders);
+        UIUtil.alignColumnRight(tblRecentOrders, 4);
+        UIUtil.alignColumnCenter(tblRecentOrders, 0, 5, 6);
+
         tblRecentOrders.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -104,7 +112,7 @@ public class DashboardPanel extends JPanel {
         });
 
         JScrollPane recentScroll = new JScrollPane(tblRecentOrders);
-        recentScroll.setPreferredSize(new Dimension(0, 195));
+        recentScroll.setPreferredSize(new Dimension(0, 210));
         recentScroll.setBorder(BorderFactory.createTitledBorder("Đơn hàng gần đây (Double-click để xem & in hóa đơn)"));
 
         add(cardsPanel, BorderLayout.NORTH);
@@ -115,60 +123,82 @@ public class DashboardPanel extends JPanel {
     }
 
     private void styleChart(JFreeChart chart) {
-        chart.setBackgroundPaint(Color.WHITE);
+        chart.setBackgroundPaint(UIManager.getColor("Panel.background"));
+        chart.getTitle().setFont(new Font("Segoe UI", Font.BOLD, 14));
         CategoryPlot plot = chart.getCategoryPlot();
         plot.setBackgroundPaint(new Color(248, 250, 252));
-        plot.setRangeGridlinePaint(new Color(203, 213, 225));
+        plot.setOutlineVisible(false);
+        plot.setRangeGridlinePaint(new Color(226, 232, 240));
         BarRenderer renderer = (BarRenderer) plot.getRenderer();
-        renderer.setSeriesPaint(0, new Color(37, 99, 235));
+        renderer.setBarPainter(new StandardBarPainter());
+        renderer.setShadowVisible(false);
+        renderer.setSeriesPaint(0, UIUtil.PRIMARY);
+        renderer.setMaximumBarWidth(0.12);
     }
 
     public void refreshData() {
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-        try {
-            DashboardStatsDTO stats = reportService.getDashboardStats();
-            cardRevenue.updateValues(
-                    FormatUtil.formatCurrency(stats.getTodayRevenue()),
-                    "Lợi nhuận gộp: " + FormatUtil.formatCurrency(stats.getTodayProfit())
-            );
-            cardOrders.updateValues(String.valueOf(stats.getTodayOrderCount()), "Đơn hoàn tất hôm nay");
-            cardLowStock.updateValues(String.valueOf(stats.getLowStockCount()), "Sản phẩm có tồn < 10");
-            cardNewCustomers.updateValues(String.valueOf(stats.getNewCustomerCount()), "Khách đăng ký mới (30 ngày)");
+        new SwingWorker<Void, Void>() {
+            private DashboardStatsDTO stats;
+            private Map<String, BigDecimal> last7Days;
+            private List<TopProductDTO> top5;
+            private List<Invoice> recent;
 
-            chartDataset.clear();
-            Map<String, BigDecimal> last7Days = reportService.getLast7DaysRevenue();
-            for (Map.Entry<String, BigDecimal> entry : last7Days.entrySet()) {
-                chartDataset.addValue(entry.getValue(), "Doanh thu", entry.getKey());
+            @Override
+            protected Void doInBackground() {
+                stats = reportService.getDashboardStats();
+                last7Days = reportService.getLast7DaysRevenue();
+                top5 = reportService.getTopSellingProducts(5, null, null);
+                recent = invoiceService.getRecentInvoices(10);
+                return null;
             }
 
-            topProductModel.setRowCount(0);
-            List<TopProductDTO> top5 = reportService.getTopSellingProducts(5, null, null);
-            int rank = 1;
-            for (TopProductDTO p : top5) {
-                topProductModel.addRow(new Object[]{
-                        "#" + (rank++),
-                        p.getProductCode(),
-                        p.getProductName(),
-                        p.getTotalQuantitySold(),
-                        FormatUtil.formatCurrency(p.getTotalRevenue())
-                });
-            }
+            @Override
+            protected void done() {
+                setCursor(Cursor.getDefaultCursor());
+                try {
+                    get();
+                    cardRevenue.updateValues(
+                            FormatUtil.formatCurrency(stats.getTodayRevenue()),
+                            "Lợi nhuận gộp: " + FormatUtil.formatCurrency(stats.getTodayProfit())
+                    );
+                    cardOrders.updateValues(String.valueOf(stats.getTodayOrderCount()), "Đơn hoàn tất hôm nay");
+                    cardLowStock.updateValues(String.valueOf(stats.getLowStockCount()), "Sản phẩm có tồn < 10");
+                    cardNewCustomers.updateValues(String.valueOf(stats.getNewCustomerCount()), "Khách đăng ký mới (30 ngày)");
 
-            recentOrdersModel.setRowCount(0);
-            recentInvoicesList = invoiceService.getRecentInvoices(10);
-            for (Invoice inv : recentInvoicesList) {
-                recentOrdersModel.addRow(new Object[]{
-                        inv.getInvoiceCode(),
-                        FormatUtil.formatDateTime(inv.getCreatedAt()),
-                        inv.getCustomerName(),
-                        inv.getEmployeeName(),
-                        FormatUtil.formatCurrency(inv.getTotalAmount()),
-                        "CASH".equalsIgnoreCase(inv.getPaymentMethod()) ? "Tiền mặt" : "Chuyển khoản",
-                        "PAID".equalsIgnoreCase(inv.getStatus()) ? "Đã thanh toán" : "Đã hủy"
-                });
+                    chartDataset.clear();
+                    for (Map.Entry<String, BigDecimal> entry : last7Days.entrySet()) {
+                        chartDataset.addValue(entry.getValue(), "Doanh thu", entry.getKey());
+                    }
+
+                    topProductModel.setRowCount(0);
+                    int rank = 1;
+                    for (TopProductDTO p : top5) {
+                        topProductModel.addRow(new Object[]{
+                                "#" + (rank++),
+                                p.getProductCode(),
+                                p.getProductName(),
+                                p.getTotalQuantitySold(),
+                                FormatUtil.formatCurrency(p.getTotalRevenue())
+                        });
+                    }
+
+                    recentInvoicesList = recent;
+                    recentOrdersModel.setRowCount(0);
+                    for (Invoice inv : recentInvoicesList) {
+                        recentOrdersModel.addRow(new Object[]{
+                                inv.getInvoiceCode(),
+                                FormatUtil.formatDateTime(inv.getCreatedAt()),
+                                inv.getCustomerName(),
+                                inv.getEmployeeName(),
+                                FormatUtil.formatCurrency(inv.getTotalAmount()),
+                                "CASH".equalsIgnoreCase(inv.getPaymentMethod()) ? "Tiền mặt" : "Chuyển khoản",
+                                "PAID".equalsIgnoreCase(inv.getStatus()) ? "Đã thanh toán" : "Đã hủy"
+                        });
+                    }
+                } catch (Exception ignored) {
+                }
             }
-        } finally {
-            setCursor(Cursor.getDefaultCursor());
-        }
+        }.execute();
     }
 }
