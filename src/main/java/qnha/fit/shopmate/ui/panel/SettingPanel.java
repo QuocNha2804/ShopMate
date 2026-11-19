@@ -6,7 +6,9 @@ import com.formdev.flatlaf.FlatLightLaf;
 import qnha.fit.shopmate.config.AppConfig;
 import qnha.fit.shopmate.config.SessionManager;
 import qnha.fit.shopmate.service.BackupService;
+import qnha.fit.shopmate.ui.dialog.DBConfigDialog;
 import qnha.fit.shopmate.util.ImageUtil;
+import qnha.fit.shopmate.util.UIUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -37,7 +39,6 @@ public class SettingPanel extends JPanel {
         setLayout(new BorderLayout(14, 14));
         setBorder(new EmptyBorder(16, 18, 16, 18));
 
-        // 1. Khung Thông tin cửa hàng (In lên Hóa đơn)
         JPanel storeCard = new JPanel(new BorderLayout(16, 10));
         storeCard.setBorder(BorderFactory.createTitledBorder("1. Thông tin Cửa hàng (Hiển thị trên Hóa đơn & Báo cáo)"));
 
@@ -57,8 +58,7 @@ public class SettingPanel extends JPanel {
         addRow(form, gbc, r++, "Thông tin TK Ngân hàng (QR):", txtBankInfo);
 
         JButton btnSaveStore = new JButton("Lưu Thông tin Cửa hàng");
-        btnSaveStore.setBackground(new Color(37, 99, 235));
-        btnSaveStore.setForeground(Color.WHITE);
+        UIUtil.stylePrimaryButton(btnSaveStore);
         btnSaveStore.setEnabled(SessionManager.isAdmin());
         gbc.gridx = 1; gbc.gridy = r;
         form.add(btnSaveStore, gbc);
@@ -68,6 +68,7 @@ public class SettingPanel extends JPanel {
         logoBox.setBorder(BorderFactory.createTitledBorder("Logo Cửa hàng"));
         lblLogoPreview.setHorizontalAlignment(SwingConstants.CENTER);
         JButton btnChooseLogo = new JButton("Chọn Logo...");
+        UIUtil.styleSecondaryButton(btnChooseLogo);
         btnChooseLogo.setEnabled(SessionManager.isAdmin());
         logoBox.add(lblLogoPreview, BorderLayout.CENTER);
         logoBox.add(btnChooseLogo, BorderLayout.SOUTH);
@@ -75,16 +76,29 @@ public class SettingPanel extends JPanel {
         storeCard.add(form, BorderLayout.CENTER);
         storeCard.add(logoBox, BorderLayout.EAST);
 
-        // 2. Khung Đổi Giao diện (Theme) & Sao lưu / Phục hồi Database
         JPanel bottomGrid = new JPanel(new GridLayout(1, 2, 14, 0));
-        bottomGrid.setPreferredSize(new Dimension(0, 175));
+        bottomGrid.setPreferredSize(new Dimension(0, 195));
 
-        JPanel themeCard = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 18));
-        themeCard.setBorder(BorderFactory.createTitledBorder("2. Giao diện Ứng dụng (FlatLaf Theme)"));
-        themeCard.add(new JLabel("Chọn chủ đề:"));
-        themeCard.add(cboTheme);
-        JButton btnApplyTheme = new JButton("Áp dụng Theme ngay");
-        themeCard.add(btnApplyTheme);
+        JPanel themeCard = new JPanel(new GridBagLayout());
+        themeCard.setBorder(BorderFactory.createTitledBorder("2. Giao diện & Kết nối Database"));
+        GridBagConstraints tgbc = new GridBagConstraints();
+        tgbc.insets = new Insets(6, 10, 6, 10);
+        tgbc.fill = GridBagConstraints.HORIZONTAL;
+
+        tgbc.gridx = 0; tgbc.gridy = 0;
+        themeCard.add(new JLabel("Chủ đề (Theme):"), tgbc);
+        tgbc.gridx = 1;
+        themeCard.add(cboTheme, tgbc);
+        JButton btnApplyTheme = new JButton("Áp dụng Theme");
+        UIUtil.stylePrimaryButton(btnApplyTheme);
+        tgbc.gridx = 2;
+        themeCard.add(btnApplyTheme, tgbc);
+
+        JButton btnDbConfig = new JButton("⚙ Cấu hình Kết nối MariaDB / MySQL");
+        UIUtil.styleSecondaryButton(btnDbConfig);
+        btnDbConfig.setEnabled(SessionManager.isAdmin());
+        tgbc.gridx = 0; tgbc.gridy = 1; tgbc.gridwidth = 3;
+        themeCard.add(btnDbConfig, tgbc);
 
         JPanel backupCard = new JPanel(new GridLayout(3, 1, 8, 8));
         backupCard.setBorder(BorderFactory.createCompoundBorder(
@@ -92,11 +106,11 @@ public class SettingPanel extends JPanel {
                 new EmptyBorder(8, 14, 8, 14)
         ));
         JButton btnBackup = new JButton("Sao lưu Database ra file .sql (Backup)");
-        btnBackup.setBackground(new Color(22, 163, 74));
-        btnBackup.setForeground(Color.WHITE);
+        UIUtil.styleSuccessButton(btnBackup);
         JButton btnRestore = new JButton("Phục hồi Database từ file .sql (Restore)");
+        UIUtil.styleSecondaryButton(btnRestore);
         JButton btnResetDemo = new JButton("Khôi phục Dữ liệu mẫu gốc (schema.sql + data.sql)");
-        btnResetDemo.setForeground(new Color(220, 38, 38));
+        UIUtil.styleDangerButton(btnResetDemo);
 
         boolean isAdmin = SessionManager.isAdmin();
         btnBackup.setEnabled(isAdmin);
@@ -113,10 +127,10 @@ public class SettingPanel extends JPanel {
         add(storeCard, BorderLayout.CENTER);
         add(bottomGrid, BorderLayout.SOUTH);
 
-        // Events
         btnChooseLogo.addActionListener(e -> handleChooseLogo());
         btnSaveStore.addActionListener(e -> handleSaveStoreInfo());
         btnApplyTheme.addActionListener(e -> handleApplyTheme());
+        btnDbConfig.addActionListener(e -> new DBConfigDialog(SwingUtilities.getWindowAncestor(this)).setVisible(true));
         btnBackup.addActionListener(e -> handleBackupSql());
         btnRestore.addActionListener(e -> handleRestoreSql());
         btnResetDemo.addActionListener(e -> handleResetSampleData());

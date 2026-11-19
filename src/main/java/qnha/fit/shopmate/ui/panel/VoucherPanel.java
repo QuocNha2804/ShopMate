@@ -5,6 +5,7 @@ import qnha.fit.shopmate.model.Voucher;
 import qnha.fit.shopmate.service.CustomerService;
 import qnha.fit.shopmate.ui.dialog.VoucherDialog;
 import qnha.fit.shopmate.util.FormatUtil;
+import qnha.fit.shopmate.util.UIUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -24,15 +25,15 @@ public class VoucherPanel extends JPanel {
 
         JPanel topBar = new JPanel(new BorderLayout());
         JLabel lblTitle = new JLabel("Quản lý Chương trình Khuyến mãi & Mã giảm giá (Voucher)");
-        lblTitle.setFont(new Font("SansSerif", Font.BOLD, 16));
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         JButton btnAdd = new JButton("+ Thêm Mã giảm giá");
-        btnAdd.setBackground(new Color(37, 99, 235));
-        btnAdd.setForeground(Color.WHITE);
+        UIUtil.stylePrimaryButton(btnAdd);
         JButton btnEdit = new JButton("Sửa Mã");
+        UIUtil.styleSecondaryButton(btnEdit);
         JButton btnDelete = new JButton("Xóa");
-        btnDelete.setForeground(new Color(220, 38, 38));
+        UIUtil.styleDangerButton(btnDelete);
 
         boolean isAdmin = SessionManager.isAdmin();
         btnAdd.setEnabled(isAdmin);
@@ -51,7 +52,9 @@ public class VoucherPanel extends JPanel {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         table = new JTable(tableModel);
-        table.setRowHeight(30);
+        UIUtil.styleTable(table);
+        UIUtil.alignColumnCenter(table, 0, 1, 5, 6, 7, 8);
+        UIUtil.alignColumnRight(table, 2, 3, 4);
 
         btnAdd.addActionListener(e -> openDialog(null));
         btnEdit.addActionListener(e -> {

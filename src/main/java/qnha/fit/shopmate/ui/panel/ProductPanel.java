@@ -10,9 +10,12 @@ import qnha.fit.shopmate.ui.dialog.StockImportDialog;
 import qnha.fit.shopmate.util.ExcelExporter;
 import qnha.fit.shopmate.util.FormatUtil;
 import qnha.fit.shopmate.util.ImageUtil;
+import qnha.fit.shopmate.util.UIUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -49,8 +52,11 @@ public class ProductPanel extends JPanel {
 
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
         filterPanel.add(new JLabel("Tìm tên/mã:"));
+        UIUtil.styleSearchField(txtSearch, "Nhập tên hoặc mã SKU...");
+        txtSearch.setPreferredSize(new Dimension(210, 32));
         filterPanel.add(txtSearch);
         JButton btnSearch = new JButton("Tìm kiếm");
+        UIUtil.styleSecondaryButton(btnSearch);
         filterPanel.add(btnSearch);
 
         filterPanel.add(new JLabel("Danh mục:"));
@@ -61,15 +67,15 @@ public class ProductPanel extends JPanel {
 
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
         JButton btnAdd = new JButton("+ Thêm SP");
-        btnAdd.setBackground(new Color(37, 99, 235));
-        btnAdd.setForeground(Color.WHITE);
+        UIUtil.stylePrimaryButton(btnAdd);
         JButton btnEdit = new JButton("Sửa SP");
+        UIUtil.styleSecondaryButton(btnEdit);
         JButton btnDelete = new JButton("Xóa / Ngừng KD");
-        btnDelete.setForeground(new Color(220, 38, 38));
+        UIUtil.styleDangerButton(btnDelete);
         JButton btnImportStock = new JButton("Nhập hàng vào kho");
-        btnImportStock.setBackground(new Color(22, 163, 74));
-        btnImportStock.setForeground(Color.WHITE);
+        UIUtil.styleSuccessButton(btnImportStock);
         JButton btnExportExcel = new JButton("Xuất Excel");
+        UIUtil.styleSecondaryButton(btnExportExcel);
 
         boolean isAdmin = SessionManager.isAdmin();
         btnAdd.setEnabled(isAdmin);
@@ -92,7 +98,7 @@ public class ProductPanel extends JPanel {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         table = new JTable(tableModel);
-        table.setRowHeight(30);
+        UIUtil.styleTable(table);
 
         StockTableCellRenderer stockRenderer = new StockTableCellRenderer(6);
         for (int i = 0; i < table.getColumnCount(); i++) {
@@ -101,7 +107,7 @@ public class ProductPanel extends JPanel {
 
         // 3. Khung preview ảnh và mô tả bên phải
         JPanel previewPanel = new JPanel(new BorderLayout(8, 8));
-        previewPanel.setPreferredSize(new Dimension(230, 0));
+        previewPanel.setPreferredSize(new Dimension(240, 0));
         previewPanel.setBorder(BorderFactory.createTitledBorder("Chi tiết & Ảnh Sản phẩm"));
 
         lblPreviewImg.setHorizontalAlignment(SwingConstants.CENTER);
@@ -109,7 +115,7 @@ public class ProductPanel extends JPanel {
         lblPreviewImg.setIcon(ImageUtil.createPlaceholderIcon("SP", 140, 140));
 
         lblPreviewName.setHorizontalAlignment(SwingConstants.CENTER);
-        lblPreviewName.setFont(new Font("SansSerif", Font.BOLD, 13));
+        lblPreviewName.setFont(new Font("Segoe UI", Font.BOLD, 13));
 
         txtPreviewDesc.setEditable(false);
         txtPreviewDesc.setLineWrap(true);
@@ -145,6 +151,11 @@ public class ProductPanel extends JPanel {
         // Events
         btnSearch.addActionListener(e -> loadProducts());
         txtSearch.addActionListener(e -> loadProducts());
+        txtSearch.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { loadProducts(); }
+            @Override public void removeUpdate(DocumentEvent e) { loadProducts(); }
+            @Override public void changedUpdate(DocumentEvent e) { loadProducts(); }
+        });
         cboFilterCategory.addActionListener(e -> loadProducts());
         cboSort.addActionListener(e -> loadProducts());
 
